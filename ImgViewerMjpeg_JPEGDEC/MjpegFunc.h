@@ -11,10 +11,10 @@
 #include <JPEGDEC.h>
 
 /* variables */
-int mjpeg_total_frames = 0;
-unsigned long mjpeg_total_read_video = 0;
-unsigned long mjpeg_total_decode_video = 0;
-unsigned long mjpeg_total_show_video = 0;
+int mjpeg_total_frames;
+unsigned long mjpeg_total_read_video;
+unsigned long mjpeg_total_decode_video;
+unsigned long mjpeg_total_show_video;
 
 bool mjpeg_use_big_endian;
 uint8_t *mjpeg_read_buf;
@@ -59,6 +59,11 @@ bool mjpeg_open(char *filename)
 
     return false;
   }
+
+  mjpeg_total_frames = 0;
+  mjpeg_total_read_video = 0;
+  mjpeg_total_decode_video = 0;
+  mjpeg_total_show_video = 0;
 
   mjpeg_file_idx = 0;
 
@@ -150,7 +155,7 @@ bool mjpeg_read()
     }
     if (found_FFD9)
     {
-      mjpeg_total_frames++;
+      ++mjpeg_total_frames;
       mjpeg_total_read_video += millis() - ms;
       return true;
     }
