@@ -7,6 +7,7 @@
  * JPEGDEC: https://github.com/bitbank2/JPEGDEC.git
  ******************************************************************************/
 #define READ_BUFFER_SIZE 1024
+// #define EXCLUSIVE_DISPLAY_INTERFACE
 
 #include <JPEGDEC.h>
 
@@ -170,6 +171,7 @@ int jpegDrawCallback(JPEGDRAW *pDraw)
 {
   // Serial.printf("Draw pos = %d,%d. size = %d x %d\n", pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
   unsigned long ms = millis();
+#ifdef EXCLUSIVE_DISPLAY_INTERFACE
   gfx->writeAddrWindow(pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
   if (mjpeg_use_big_endian)
   {
@@ -179,6 +181,16 @@ int jpegDrawCallback(JPEGDRAW *pDraw)
   {
     gfx->writePixels((uint16_t *)pDraw->pPixels, pDraw->iWidth * pDraw->iHeight);
   }
+#else
+  if (mjpeg_use_big_endian)
+  {
+    gfx->draw16bitBeRGBBitmap(pDraw->x, pDraw->y, pDraw->pPixels, pDraw->iWidth, pDraw->iHeight);
+  }
+  else
+  {
+    gfx->draw16bitRGBBitmap(pDraw->x, pDraw->y, pDraw->pPixels, pDraw->iWidth, pDraw->iHeight);
+  }
+#endif
   ms = millis() - ms;
   mjpeg_total_decode_video -= ms;
   mjpeg_total_show_video += ms;
@@ -195,7 +207,16 @@ bool mjpeg_draw(int x, int y)
   {
     jpegdec.setPixelType(RGB565_BIG_ENDIAN);
   }
+#ifdef EXCLUSIVE_DISPLAY_INTERFACE
+  gfx->startWrite();
+#endif
   jpegdec.decode(x, y, 0);
+#ifdef EXCLUSIVE_DISPLAY_INTERFACE
+  gfx->endWrite();
+#endif
+#ifdef CANVAS
+  gfx->flush();
+#endif
   jpegdec.close();
 
   mjpeg_total_decode_video += millis() - ms;
