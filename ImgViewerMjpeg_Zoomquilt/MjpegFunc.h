@@ -4,12 +4,11 @@
  * MJPEG related functions
  *
  * Dependent libraries:
- * JPEGDEC: https://github.com/bitbank2/JPEGDEC.git
+ * ESP32_JPEG: https://github.com/esp-arduino-libs/ESP32_JPEG.git
  ******************************************************************************/
 #define READ_BUFFER_SIZE 1024
-// #define EXCLUSIVE_DISPLAY_INTERFACE
 
-#include <JPEGDEC.h>
+#include <ESP32_JPEG_Library.h>
 
 /* variables */
 int mjpeg_total_frames;
@@ -20,9 +19,8 @@ unsigned long mjpeg_total_show_video;
 bool mjpeg_use_big_endian;
 uint8_t *mjpeg_read_buf;
 uint8_t *mjpeg_buf;
+uint16_t *mjpeg_image_buf;
 FILE *mjpeg_file;
-
-JPEGDEC jpegdec;
 
 int32_t mjpeg_file_idx;
 int32_t mjpeg_buf_offset;
@@ -41,6 +39,13 @@ bool mjpeg_init(size_t mjpegBufSize, bool useBigEndian)
   if (!mjpeg_buf)
   {
     Serial.println("mjpeg_buf malloc failed!\n");
+    return false;
+  }
+
+  mjpeg_image_buf = (uint16_t *)aligned_alloc(16, IMAGE_DATA_SIZE);
+  if (!mjpeg_image_buf)
+  {
+    Serial.println("mjpeg_image_buf malloc failed!\n");
     return false;
   }
 
@@ -73,9 +78,9 @@ bool mjpeg_open(char *filename)
 
 bool mjpeg_read()
 {
+  // Serial.println("mjpeg_read()");
   unsigned long ms = millis();
 
-  // Serial.println("readMjpegBuf()");
   if (mjpeg_file_idx == 0)
   {
     mjpeg_buf_read = fread(mjpeg_read_buf, 1, READ_BUFFER_SIZE, mjpeg_file);
@@ -166,60 +171,60 @@ bool mjpeg_read()
   return false;
 }
 
-// pixel drawing callback
-int jpegDrawCallback(JPEGDRAW *pDraw)
-{
-  // Serial.printf("Draw pos = %d,%d. size = %d x %d\n", pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
-  unsigned long ms = millis();
-#ifdef EXCLUSIVE_DISPLAY_INTERFACE
-  gfx->writeAddrWindow(pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
-  if (mjpeg_use_big_endian)
-  {
-    gfx->writeBytes((uint8_t *)pDraw->pPixels, pDraw->iWidth * pDraw->iHeight * 2);
-  }
-  else
-  {
-    gfx->writePixels((uint16_t *)pDraw->pPixels, pDraw->iWidth * pDraw->iHeight);
-  }
-#else
-  if (mjpeg_use_big_endian)
-  {
-    gfx->draw16bitBeRGBBitmap(pDraw->x, pDraw->y, pDraw->pPixels, pDraw->iWidth, pDraw->iHeight);
-  }
-  else
-  {
-    gfx->draw16bitRGBBitmap(pDraw->x, pDraw->y, pDraw->pPixels, pDraw->iWidth, pDraw->iHeight);
-  }
-#endif
-  ms = millis() - ms;
-  mjpeg_total_decode_video -= ms;
-  mjpeg_total_show_video += ms;
-
-  return 1;
-}
-
 bool mjpeg_draw(int x, int y)
 {
+  // Serial.println("mjpeg_draw()");
   unsigned long ms = millis();
 
-  jpegdec.openRAM(mjpeg_buf, mjpeg_buf_offset, jpegDrawCallback);
-  if (mjpeg_use_big_endian)
+  // Generate default configuration
+  jpeg_dec_config_t config = {
+      .output_type = mjpeg_use_big_endian ? JPEG_RAW_TYPE_RGB565_BE : JPEG_RAW_TYPE_RGB565_LE,
+      .rotate = JPEG_ROTATE_0D,
+  };
+
+  // Create jpeg_dec
+  jpeg_dec_handle_t *jpeg_dec = jpeg_dec_open(&config);
+
+  // Create io_callback handle
+  jpeg_dec_io_t *jpeg_io = (jpeg_dec_io_t *)calloc(1, sizeof(jpeg_dec_io_t));
+
+  // Create out_info handle
+  jpeg_dec_header_info_t *out_info = (jpeg_dec_header_info_t *)calloc(1, sizeof(jpeg_dec_header_info_t));
+
+  // Set input buffer and buffer len to io_callback
+  jpeg_io->inbuf = mjpeg_buf;
+  jpeg_io->inbuf_len = mjpeg_buf_offset;
+
+  jpeg_dec_parse_header(jpeg_dec, jpeg_io, out_info);
+
+  // Serial.printf("x: %d, y: %d, w: %d, h: %d\n", x, y, out_info->width, out_info->height);
+  if ((out_info->width * out_info->height * 2) > IMAGE_DATA_SIZE)
   {
-    jpegdec.setPixelType(RGB565_BIG_ENDIAN);
+    return false;
   }
-#ifdef EXCLUSIVE_DISPLAY_INTERFACE
-  gfx->startWrite();
-#endif
-  jpegdec.decode(x, y, 0);
-#ifdef EXCLUSIVE_DISPLAY_INTERFACE
-  gfx->endWrite();
-#endif
-#ifdef CANVAS
-  gfx->flush();
-#endif
-  jpegdec.close();
+
+  jpeg_io->outbuf = (unsigned char*)mjpeg_image_buf;
+
+  jpeg_dec_process(jpeg_dec, jpeg_io);
+  jpeg_dec_close(jpeg_dec);
+
+  free(jpeg_io);
+  free(out_info);
 
   mjpeg_total_decode_video += millis() - ms;
+
+  ms = millis();
+
+  if (mjpeg_use_big_endian)
+  {
+    gfx->draw16bitBeRGBBitmap(x, y, mjpeg_image_buf, out_info->width, out_info->height);
+  }
+  else
+  {
+    gfx->draw16bitRGBBitmap(x, y, mjpeg_image_buf, out_info->width, out_info->height);
+  }
+  mjpeg_total_show_video += millis() - ms;
+
   return true;
 }
 

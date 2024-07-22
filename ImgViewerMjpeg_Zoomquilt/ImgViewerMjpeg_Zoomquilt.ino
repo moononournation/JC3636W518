@@ -2,7 +2,7 @@
  * Motion JPEG Image Viewer
  * This is a simple Motion JPEG image viewer example
  * Image Source: https://youtu.be/RpHnKaxt_OQ
- * ffmpeg -y -i "The Zoomquilt - an infinitely zooming collaborative painting.mp4" -ss 0 -t 00:02:00.000 -vf "fps=5,scale=-1:352:flags=lanczos,crop=352:352:(in_w-352)/2:0" -q:v 7 zoomquilt.mjpeg
+ * ffmpeg -y -i "The Zoomquilt - an infinitely zooming collaborative painting.mp4" -ss 0 -t 00:02:00.000 -vf "fps=5,scale=-1:360:flags=lanczos,crop=360:360:(in_w-360)/2:0" -q:v 7 zoomquilt.mjpeg
  *
  * Dependent libraries:
  * JPEGDEC: https://github.com/bitbank2/JPEGDEC.git
@@ -18,7 +18,7 @@
  ******************************************************************************/
 const char *root = "/root";
 char *mjpeg_filename = (char *)"/root/zoomquilt.mjpeg";
-#define IMAGE_DATA_SIZE (352 * 352 * 2)
+#define IMAGE_DATA_SIZE (360 * 360 * 2)
 #define MJPEG_BUFFER_SIZE (IMAGE_DATA_SIZE / 10)
 
 #include "JC3636W518.h"
@@ -84,7 +84,7 @@ void loop()
     start_ms = millis();
     while (mjpeg_read())
     {
-      mjpeg_draw(4, 4);
+      mjpeg_draw(0, 0);
     }
     int time_used = millis() - start_ms;
     float fps = 1000.0 * mjpeg_total_frames / time_used;

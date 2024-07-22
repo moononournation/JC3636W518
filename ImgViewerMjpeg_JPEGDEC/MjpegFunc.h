@@ -73,9 +73,9 @@ bool mjpeg_open(char *filename)
 
 bool mjpeg_read()
 {
+  // Serial.println("mjpeg_read()");
   unsigned long ms = millis();
 
-  // Serial.println("readMjpegBuf()");
   if (mjpeg_file_idx == 0)
   {
     mjpeg_buf_read = fread(mjpeg_read_buf, 1, READ_BUFFER_SIZE, mjpeg_file);
@@ -200,6 +200,7 @@ int jpegDrawCallback(JPEGDRAW *pDraw)
 
 bool mjpeg_draw(int x, int y)
 {
+  // Serial.println("mjpeg_draw()");
   unsigned long ms = millis();
 
   jpegdec.openRAM(mjpeg_buf, mjpeg_buf_offset, jpegDrawCallback);
