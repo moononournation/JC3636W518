@@ -19,7 +19,7 @@ Arduino_TFT *gfx = new Arduino_ST77916(bus, 47 /* RST */, 0 /* rotation */, true
 #define TOUCH_RES 40
 #define TOUCH_INT 41
 
-// microSD card
+// SD card
 #define SD_SCK 3
 #define SD_MOSI 4 // CMD
 #define SD_MISO 2 // D0
