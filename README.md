@@ -9,5 +9,9 @@
 
 [Video source](https://youtu.be/RpHnKaxt_OQ)
 ```console
-ffmpeg -y -i "The Zoomquilt - an infinitely zooming collaborative painting.mp4" -ss 0 -t 00:02:00.000 -vf "fps=5,scale=-1:352:flags=lanczos,crop=352:352:(in_w-352)/2:0" -q:v 7 zoomquilt.mjpeg
+ffmpeg -y -i "The Zoomquilt - an infinitely zooming collaborative painting.mp4" -ss 0 -t 00:02:00.000 -vf "fps=5,scale=-1:360:flags=lanczos,crop=360:360:(in_w-360)/2:0" -q:v 7 zoomquilt.mjpeg
+```
+
+```console
+ffmpeg -y -i input.webm -c:a mp3 -c:v mjpeg -q:v 7 -vf "scale=-1:360:flags=lanczos,crop=360:360:(in_w-360)/2:0" AviMp3Mjpeg360sq.avi
 ```
