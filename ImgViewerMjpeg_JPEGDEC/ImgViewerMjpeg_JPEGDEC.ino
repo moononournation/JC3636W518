@@ -32,8 +32,6 @@ char *mjpeg_filename = (char *)"/root/earth352.mjpeg";
 
 #include "MjpegFunc.h"
 
-unsigned long start_ms;
-
 void setup()
 {
   Serial.begin(115200);
@@ -70,8 +68,8 @@ void setup()
   // SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */, SD_D1, SD_D2, SD_CS /* D3 */);
   // if (!SD_MMC.begin(root, false /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_HIGHSPEED))
   {
-    Serial.println(F("ERROR: File System Mount Failed!"));
-    gfx->println(F("ERROR: File System Mount Failed!"));
+    Serial.println("ERROR: File System Mount Failed!");
+    gfx->println("ERROR: File System Mount Failed!");
   }
   else
   {
@@ -83,9 +81,9 @@ void loop()
 {
   if (mjpeg_open(mjpeg_filename))
   {
-    Serial.println(F("MJPEG start"));
+    Serial.println("MJPEG start");
 
-    start_ms = millis();
+    unsigned long start_ms = millis();
     while (mjpeg_read())
     {
       mjpeg_draw(4, 4);
@@ -94,7 +92,7 @@ void loop()
     float fps = 1000.0 * mjpeg_total_frames / time_used;
 
     mjpeg_close();
-    Serial.println(F("MJPEG end"));
+    Serial.println("MJPEG end");
 
     Serial.printf("Total frames: %d\n", mjpeg_total_frames);
     Serial.printf("Time used: %d ms\n", time_used);
