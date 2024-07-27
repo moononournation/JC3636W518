@@ -9,6 +9,9 @@
 #define READ_BUFFER_SIZE 1024
 
 #include <ESP32_JPEG_Library.h>
+jpeg_dec_handle_t *jpeg_dec;
+jpeg_dec_io_t *jpeg_io;
+jpeg_dec_header_info_t *out_info;
 
 /* variables */
 int mjpeg_total_frames;
@@ -50,6 +53,19 @@ bool mjpeg_init(size_t mjpegBufSize, bool useBigEndian)
   }
 
   mjpeg_use_big_endian = useBigEndian;
+
+  jpeg_dec_config_t config = {
+      .output_type = mjpeg_use_big_endian ? JPEG_RAW_TYPE_RGB565_BE : JPEG_RAW_TYPE_RGB565_LE,
+      .rotate = JPEG_ROTATE_0D,
+  };
+  // Create jpeg_dec
+  jpeg_dec = jpeg_dec_open(&config);
+
+  // Create io_callback handle
+  jpeg_io = (jpeg_dec_io_t *)calloc(1, sizeof(jpeg_dec_io_t));
+
+  // Create out_info handle
+  out_info = (jpeg_dec_header_info_t *)calloc(1, sizeof(jpeg_dec_header_info_t));
 
   return true;
 }
@@ -116,16 +132,17 @@ bool mjpeg_read()
   bool found_FFD9 = false;
   if (mjpeg_buf_read > 0)
   {
-    i = 3;
     while ((mjpeg_buf_read > 0) && (!found_FFD9))
     {
       if ((mjpeg_buf_offset > 0) && (mjpeg_buf[mjpeg_buf_offset - 1] == 0xFF) && (_p[0] == 0xD9)) // JPEG trailer
       {
+        i = 1;
         // Serial.printf("Found FFD9 at: %d.\n", i);
         found_FFD9 = true;
       }
       else
       {
+        i = 3;
         while ((i < mjpeg_buf_read) && (!found_FFD9))
         {
           if ((_p[i] == 0xFF) && (_p[i + 1] == 0xD9)) // JPEG trailer
@@ -176,21 +193,6 @@ bool mjpeg_draw(int x, int y)
   // Serial.println("mjpeg_draw()");
   unsigned long ms = millis();
 
-  // Generate default configuration
-  jpeg_dec_config_t config = {
-      .output_type = mjpeg_use_big_endian ? JPEG_RAW_TYPE_RGB565_BE : JPEG_RAW_TYPE_RGB565_LE,
-      .rotate = JPEG_ROTATE_0D,
-  };
-
-  // Create jpeg_dec
-  jpeg_dec_handle_t *jpeg_dec = jpeg_dec_open(&config);
-
-  // Create io_callback handle
-  jpeg_dec_io_t *jpeg_io = (jpeg_dec_io_t *)calloc(1, sizeof(jpeg_dec_io_t));
-
-  // Create out_info handle
-  jpeg_dec_header_info_t *out_info = (jpeg_dec_header_info_t *)calloc(1, sizeof(jpeg_dec_header_info_t));
-
   // Set input buffer and buffer len to io_callback
   jpeg_io->inbuf = mjpeg_buf;
   jpeg_io->inbuf_len = mjpeg_buf_offset;
@@ -203,13 +205,9 @@ bool mjpeg_draw(int x, int y)
     return false;
   }
 
-  jpeg_io->outbuf = (unsigned char*)mjpeg_image_buf;
+  jpeg_io->outbuf = (unsigned char *)mjpeg_image_buf;
 
   jpeg_dec_process(jpeg_dec, jpeg_io);
-  jpeg_dec_close(jpeg_dec);
-
-  free(jpeg_io);
-  free(out_info);
 
   mjpeg_total_decode_video += millis() - ms;
 
