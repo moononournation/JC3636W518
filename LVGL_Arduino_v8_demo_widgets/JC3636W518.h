@@ -5,7 +5,7 @@
 #define GFX_BL 15
 Arduino_DataBus *bus = new Arduino_ESP32QSPI(
     10 /* cs */, 9 /* sck */, 11 /* d0 */, 12 /* d1 */, 13 /* d2 */, 14 /* d3 */);
-Arduino_GFX *gfx = new Arduino_ST77916(bus, 47 /* RST */, 0 /* rotation */, true /* IPS */, 360 /* width */, 360 /* height */);
+Arduino_ST77916 *gfx = new Arduino_ST77916(bus, 47 /* RST */, 0 /* rotation */, true /* IPS */, 360 /* width */, 360 /* height */);
 
 // I2C
 #define I2C_SDA 7
@@ -33,3 +33,5 @@ Arduino_GFX *gfx = new Arduino_ST77916(bus, 47 /* RST */, 0 /* rotation */, true
 #define I2S_LRCK 16
 #define I2S_DOUT 17
 #define I2S_DIN -1
+
+#define AUDIO_MUTE_PIN 48   // LOW for mute
