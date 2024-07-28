@@ -105,7 +105,7 @@ void avi_feed_audio()
   }
 }
 
-void avi_draw()
+void avi_draw(int x, int y)
 {
   if (millis() < avi_next_frame_ms) // check show frame or skip frame
   {
@@ -138,7 +138,7 @@ void avi_draw()
       avi_total_decode_video_ms += millis() - curr_ms;
 
       curr_ms = millis();
-      gfx->draw16bitBeRGBBitmap(0, 0, output_buf, avi_w, avi_h);
+      gfx->draw16bitBeRGBBitmap(x, y, output_buf, avi_w, avi_h);
       avi_total_show_video_ms += millis() - curr_ms;
     }
     while (millis() < avi_next_frame_ms)
@@ -160,5 +160,5 @@ void avi_close()
 {
   // AVI_close(avi);
   // jpeg_dec_close(jpeg_dec);
-  // audbuf_remain = 0;
+  audbuf_read = 0;
 }

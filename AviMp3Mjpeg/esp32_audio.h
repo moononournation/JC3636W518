@@ -8,10 +8,10 @@
 
 char *audbuf;
 size_t audbuf_read;
-size_t audbuf_remain = 0;
-unsigned long total_read_audio_ms = 0;
-unsigned long total_decode_audio_ms = 0;
-unsigned long total_play_audio_ms = 0;
+size_t audbuf_remain;
+unsigned long total_read_audio_ms;
+unsigned long total_decode_audio_ms;
+unsigned long total_play_audio_ms;
 
 int _samprate = 0;
 void audioDataCallback(MP3FrameInfo &info, int16_t *pwm_buffer, size_t len, void *ref)
@@ -19,8 +19,8 @@ void audioDataCallback(MP3FrameInfo &info, int16_t *pwm_buffer, size_t len, void
   unsigned long s = millis();
   if (_samprate != info.samprate)
   {
-    log_i("bitrate: %d, nChans: %d, samprate: %d, bitsPerSample: %d, outputSamps: %d, layer: %d, version: %d",
-          info.bitrate, info.nChans, info.samprate, info.bitsPerSample, info.outputSamps, info.layer, info.version);
+    Serial.printf("bitrate: %d, nChans: %d, samprate: %d, bitsPerSample: %d, outputSamps: %d, layer: %d, version: %d\n",
+                  info.bitrate, info.nChans, info.samprate, info.bitsPerSample, info.outputSamps, info.layer, info.version);
     i2s_set_clk(I2S_OUTPUT_NUM, info.samprate /* sample_rate */, info.bitsPerSample /* bits_cfg */, (info.nChans == 2) ? I2S_CHANNEL_STEREO : I2S_CHANNEL_MONO /* channel */);
     _samprate = info.samprate;
   }
@@ -30,7 +30,7 @@ void audioDataCallback(MP3FrameInfo &info, int16_t *pwm_buffer, size_t len, void
   }
   size_t i2s_bytes_written = 0;
   i2s_write(I2S_OUTPUT_NUM, pwm_buffer, len * 2, &i2s_bytes_written, portMAX_DELAY);
-  // log_i("len: %d, i2s_bytes_written: %d", len, i2s_bytes_written);
+  // Serial.printf("len: %d, i2s_bytes_written: %d\n", len, i2s_bytes_written);
   total_play_audio_ms += millis() - s;
 }
 
@@ -47,7 +47,7 @@ esp_err_t i2s_init()
   i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
   i2s_config.communication_format = I2S_COMM_FORMAT_STAND_I2S;
   i2s_config.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1;
-  i2s_config.dma_buf_count = 12;
+  i2s_config.dma_buf_count = 32;
   i2s_config.dma_buf_len = 320;
   i2s_config.use_apll = false;
   i2s_config.tx_desc_auto_clear = true;
@@ -65,9 +65,7 @@ esp_err_t i2s_init()
   ret_val |= i2s_driver_install(I2S_OUTPUT_NUM, &i2s_config, 0, NULL);
   ret_val |= i2s_set_pin(I2S_OUTPUT_NUM, &pin_config);
 
-  i2s_zero_dma_buffer(I2S_NUM_0);
-
-  mp3.begin();
+  i2s_zero_dma_buffer(I2S_OUTPUT_NUM);
 
   return ret_val;
 }
@@ -77,6 +75,9 @@ void mp3_player_task(void *pvParam)
   unsigned long ms;
   char *p;
   long w;
+
+  Serial.printf("mp3_player_task start\n");
+  mp3.begin();
   do
   {
     ms = millis();
@@ -85,7 +86,7 @@ void mp3_player_task(void *pvParam)
     while (audbuf_remain > 0)
     {
       w = mp3.write(p, audbuf_remain);
-      // log_i("r: %d, w: %d\n", r, w);
+      // Serial.printf("r: %d, w: %d\n", r, w);
       audbuf_remain -= w;
       p += w;
     }
@@ -95,10 +96,10 @@ void mp3_player_task(void *pvParam)
     vTaskDelay(pdMS_TO_TICKS(1));
   } while (audbuf_read > 0);
 
-  // log_i("MP3 stop.");
-  // mp3.end();
+  Serial.printf("mp3_player_task stop\n");
+  mp3.end();
 
-  i2s_zero_dma_buffer(I2S_NUM_0);
+  i2s_zero_dma_buffer(I2S_OUTPUT_NUM);
   vTaskDelete(NULL);
 }
 

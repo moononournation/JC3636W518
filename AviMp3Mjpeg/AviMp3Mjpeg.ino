@@ -110,17 +110,16 @@ void loop()
     while (avi_curr_frame < avi_total_frames)
     {
       avi_feed_audio();
-      avi_draw();
+      avi_draw(0, 0);
     }
 
     int time_used = millis() - avi_start_ms;
-    float fps = 1000.0 * avi_total_frames / time_used;
 
-    avi_feed_audio();
     avi_close();
     Serial.println("AVI end");
 
     long played_frames = avi_total_frames - avi_skipped_frames;
+    float fps = 1000.0 * played_frames / time_used;
     total_decode_audio_ms -= total_play_audio_ms;
     // avi_total_decode_video_ms -= avi_total_show_video_ms;
 
