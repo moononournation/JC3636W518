@@ -1,8 +1,6 @@
 /*******************************************************************************
- * Motion JPEG Image Viewer
- * This is a simple Motion JPEG image viewer example
- * Image Source: https://youtu.be/RpHnKaxt_OQ
- * ffmpeg -y -i "The Zoomquilt - an infinitely zooming collaborative painting.mp4" -ss 0 -t 00:02:00.000 -vf "fps=5,scale=-1:360:flags=lanczos,crop=360:360:(in_w-360)/2:0" -q:v 7 zoomquilt.mjpeg
+ * AVI Player example
+ * convert script: ffmpeg -y -i input.webm -c:a mp3 -c:v mjpeg -q:v 7 -vf "scale=-1:360:flags=lanczos,crop=360:360:(in_w-360)/2:0" AviMp3Mjpeg360sq.avi
  *
  * Dependent libraries:
  * Arduino_GFX: https://github.com/moononournation/Arduino_GFX.git
